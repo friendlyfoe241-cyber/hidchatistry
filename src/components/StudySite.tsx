@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Leaf, Microscope, Dna, FlaskConical, BookOpenCheck, ClipboardList,
+  Leaf, FlaskConical, Dna, Atom, ClipboardList,
   FileText, GraduationCap, Library, MessagesSquare, LogOut, ArrowRight,
   CheckCircle2, Clock, Layers, Sparkles,
 } from 'lucide-react';
 import { NotesPage } from './NotesPage';
 import { getNote } from '../data/notes';
+import { SUBJECTS, getSubject, topicCount, type Subject, type SubjectUnit } from '../data/subjects';
 
 interface StudySiteProps {
   chatOpen: boolean;
@@ -17,94 +18,27 @@ interface StudySiteProps {
 
 const NAV_LINKS = [
   { label: 'Home', href: '#home' },
-  { label: 'Topics', href: '#topics' },
+  { label: 'Biology', href: '#/subject/biology' },
+  { label: 'Chemistry', href: '#/subject/chemistry' },
+  { label: 'Physics', href: '#/subject/physics' },
   { label: 'Revision', href: '#revision' },
   { label: 'Past Papers', href: '#papers' },
   { label: 'Resources', href: '#resources' },
   { label: 'About', href: '#about' },
 ];
 
-const UNITS = [
-  {
-    code: 'Unit 1 · WBI11',
-    icon: Microscope,
-    title: 'Molecules, Cells and Gas Exchange',
-    copy: 'The chemistry of life, cell structure and the systems that move substances in and out of organisms.',
-    topics: [
-      { label: 'Biological molecules', slug: 'biological-molecules' },
-      { label: 'Cells & microscopy', slug: 'cells-and-microscopy' },
-      { label: 'Exchange and transport', slug: 'exchange-and-transport' },
-      { label: 'Gas exchange', slug: 'gas-exchange' },
-    ],
-  },
-  {
-    code: 'Unit 2 · WBI12',
-    icon: Dna,
-    title: 'Reproduction, Inheritance and Evolution',
-    copy: 'How organisms reproduce, how characteristics are passed on, and how diversity arises over time.',
-    topics: [
-      { label: 'Sexual & asexual reproduction', slug: 'reproduction' },
-      { label: 'Inheritance & genetic diversity', slug: 'inheritance-and-genetic-diversity' },
-      { label: 'Biodiversity & classification', slug: 'biodiversity-and-classification' },
-      { label: 'Evolution', slug: 'evolution' },
-    ],
-  },
-  {
-    code: 'Unit 3 · WBI13',
-    icon: FlaskConical,
-    title: 'Energy, Exercise and Coordination',
-    copy: 'Homeostasis, respiration, and the neural and hormonal systems that coordinate the body.',
-    topics: [
-      { label: 'Homeostasis & excretion', slug: 'homeostasis-and-excretion' },
-      { label: 'Neuronal coordination', slug: 'neuronal-coordination' },
-      { label: 'Hormonal coordination', slug: 'hormonal-coordination' },
-      { label: 'Muscles & movement', slug: 'muscles-and-movement' },
-      { label: 'Respiration', slug: 'respiration' },
-    ],
-  },
-  {
-    code: 'Unit 4 · WBI14',
-    icon: BookOpenCheck,
-    title: 'Genetics, Populations and Ecosystems',
-    copy: 'Gene expression, biotechnology, population genetics and the ecology of living systems.',
-    topics: [
-      { label: 'Cellular control', slug: 'cellular-control' },
-      { label: 'Biotechnology & gene technologies', slug: 'biotechnology' },
-      { label: 'Patterns of inheritance', slug: 'patterns-of-inheritance' },
-      { label: 'Populations & evolution', slug: 'populations-and-evolution' },
-      { label: 'Ecosystems', slug: 'ecosystems' },
-    ],
-  },
-  {
-    code: 'Unit 5 · WBI15',
-    icon: ClipboardList,
-    title: 'Practical Skills in Biology I',
-    copy: 'Planning, analysis and evaluation — the experimental skills assessed alongside Units 1 and 2.',
-    topics: [
-      { label: 'Planning experiments', slug: 'planning-experiments' },
-      { label: 'Recording & analysing data', slug: 'recording-and-analysing-data' },
-      { label: 'Evaluation & uncertainty', slug: 'evaluation-and-uncertainty' },
-    ],
-  },
-  {
-    code: 'Unit 6 · WBI16',
-    icon: ClipboardList,
-    title: 'Practical Skills in Biology II',
-    copy: 'Advanced practical techniques and the quantitative skills assessed alongside Units 3 and 4.',
-    topics: [
-      { label: 'Advanced practical techniques', slug: 'advanced-practical-techniques' },
-      { label: 'Graphs & statistical tests', slug: 'statistical-tests' },
-      { label: 'Scientific method', slug: 'scientific-method' },
-    ],
-  },
-];
+const SUBJECT_ICONS: Record<string, React.ElementType> = {
+  biology: Dna,
+  chemistry: FlaskConical,
+  physics: Atom,
+};
 
 const REVISION_CARDS = [
   {
     icon: FileText,
     title: 'Condensed revision notes',
     copy: 'Every sub-topic distilled into short, exam-focused summaries you can read in a single sitting.',
-    href: '#topics',
+    href: '#subjects',
   },
   {
     icon: Layers,
@@ -126,18 +60,11 @@ const REVISION_CARDS = [
   },
 ];
 
-const EXAM_ROWS = [
-  { unit: 'Unit 1 — Molecules, Cells and Gas Exchange', paper: 'WBI11/01', time: '1h 30m', marks: '80 marks' },
-  { unit: 'Unit 2 — Reproduction, Inheritance and Evolution', paper: 'WBI12/01', time: '1h 30m', marks: '80 marks' },
-  { unit: 'Unit 3 — Energy, Exercise and Coordination', paper: 'WBI13/01', time: '1h 30m', marks: '80 marks' },
-  { unit: 'Unit 4 — Genetics, Populations and Ecosystems', paper: 'WBI14/01', time: '1h 30m', marks: '80 marks' },
-];
-
 const RESOURCES = [
   {
     icon: FileText,
     title: 'Official specification',
-    copy: 'The full Pearson Edexcel International AS/A Level Biology specification.',
+    copy: 'The full Pearson Edexcel International AS/A Level specifications for all three sciences.',
     href: 'https://qualifications.pearson.com/en/qualifications/edexcel-international-advanced-levels.html',
     external: true,
   },
@@ -172,28 +99,134 @@ const REVISION_STEPS = [
   'Revisit weak sub-topics on a spaced schedule.',
 ];
 
-const NOTES_HASH = '#/notes/';
+const TODAY_REVISION = [
+  { label: 'Moles & stoichiometry', slug: 'moles-and-stoichiometry' },
+  { label: 'Newton’s laws & forces', slug: 'motion-and-forces' },
+  { label: 'Homeostasis & negative feedback', slug: 'homeostasis-and-excretion' },
+  { label: 'Atomic structure & ionisation energies', slug: 'atomic-structure' },
+];
 
-function parseNoteSlug(): string | null {
+const NOTES_HASH = '#/notes/';
+const SUBJECT_HASH = '#/subject/';
+
+type Route = { kind: 'note'; slug: string } | { kind: 'subject'; slug: string } | null;
+
+function parseRoute(): Route {
   const hash = window.location.hash;
-  return hash.startsWith(NOTES_HASH) ? hash.slice(NOTES_HASH.length) : null;
+  if (hash.startsWith(NOTES_HASH)) return { kind: 'note', slug: hash.slice(NOTES_HASH.length) };
+  if (hash.startsWith(SUBJECT_HASH)) return { kind: 'subject', slug: hash.slice(SUBJECT_HASH.length) };
+  return null;
+}
+
+/** Unit card with topic chips — used on subject pages. */
+function UnitCard({ unit, icon: Icon }: { unit: SubjectUnit; icon: React.ElementType; key?: string }) {
+  return (
+    <article className="study-card">
+      <div className="study-card-top">
+        <span className="study-icon"><Icon className="w-4.5 h-4.5" /></span>
+        <span className="study-code">{unit.code}</span>
+      </div>
+      <h3 className="study-card-title">{unit.title}</h3>
+      <p className="study-card-copy">{unit.copy}</p>
+      <div className="study-chips">
+        {unit.topics.map(t => (
+          <a key={t.slug} href={`#/notes/${t.slug}`} className="study-chip">{t.label}</a>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+/** Papers table — with or without the Subject column. */
+function PapersTable({ subject }: { subject?: Subject }) {
+  const rows = subject
+    ? subject.papers.map(p => ({ subjectName: subject.name, ...p }))
+    : SUBJECTS.flatMap(s => s.papers.map(p => ({ subjectName: s.name, ...p })));
+  return (
+    <div className="study-table-wrap">
+      <table className="study-table">
+        <thead>
+          <tr>
+            {!subject && <th>Subject</th>}
+            <th>Unit</th><th>Paper</th><th>Duration</th><th>Marks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => (
+            <tr key={row.paper}>
+              {!subject && <td>{row.subjectName}</td>}
+              <td>{row.unit}</td><td>{row.paper}</td><td>{row.time}</td><td>{row.marks}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** One subject's page: header, unit cards with topics, and its papers. */
+function SubjectView({ subject }: { subject: Subject }) {
+  const Icon = SUBJECT_ICONS[subject.slug] ?? ClipboardList;
+  return (
+    <div className="study-subject-wrap">
+      <nav className="study-crumb" aria-label="Breadcrumb">
+        <a href="#home" className="study-link">Home</a>
+        <span>/</span>
+        <a href="#subjects" className="study-link">Subjects</a>
+        <span>/</span>
+        <span className="study-crumb-current">{subject.name}</span>
+      </nav>
+
+      <header className="study-subject-head">
+        <span className="study-badge"><Icon className="w-3.5 h-3.5" /> Pearson Edexcel International AS &amp; A Level</span>
+        <h1 className="study-h1 study-h1-sm">{subject.name} notes &amp; revision topics</h1>
+        <p className="study-lede">{subject.blurb}</p>
+        <div className="study-hero-stats">
+          <span><strong>{subject.units.length}</strong> units covered</span>
+          <span><strong>{topicCount(subject)}</strong> revision topics</span>
+          <span><strong>100%</strong> spec-aligned</span>
+        </div>
+      </header>
+
+      <div className="study-grid study-grid-3">
+        {subject.units.map(unit => (
+          <UnitCard
+            key={unit.code}
+            unit={unit}
+            icon={unit.title.includes('Practical') ? ClipboardList : Icon}
+          />
+        ))}
+      </div>
+
+      <section className="study-subject-papers">
+        <div className="study-section-head">
+          <p className="study-eyebrow">Exam practice</p>
+          <h2 className="study-h2">Past papers &amp; mark schemes</h2>
+          <p className="study-sub">Practise under timed conditions, then mark yourself honestly against the scheme.</p>
+        </div>
+        <PapersTable subject={subject} />
+        <p className="study-note">Paper formats can change — always confirm against the latest Pearson specification.</p>
+      </section>
+    </div>
+  );
 }
 
 export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudySiteProps) {
-  const [noteSlug, setNoteSlug] = useState<string | null>(parseNoteSlug);
-  const note = noteSlug ? getNote(noteSlug) : undefined;
+  const [route, setRoute] = useState<Route>(parseRoute);
+  const note = route?.kind === 'note' ? getNote(route.slug) : undefined;
+  const subject = route?.kind === 'subject' ? getSubject(route.slug) : undefined;
 
-  // In-page hash router: '#/notes/<slug>' shows a revision note; any other
-  // hash is a section anchor on the main page.
+  // In-page hash router: '#/notes/<slug>' shows a revision note,
+  // '#/subject/<slug>' shows a subject page; any other hash is a section anchor.
   useEffect(() => {
     const onHashChange = () => {
-      const slug = parseNoteSlug();
-      if (slug) {
-        setNoteSlug(slug);
+      const parsed = parseRoute();
+      if (parsed) {
+        setRoute(parsed);
         window.scrollTo({ top: 0 });
         return;
       }
-      setNoteSlug(null);
+      setRoute(null);
       const id = window.location.hash.replace('#', '');
       if (!id) return;
       // Two frames: let React render the main page back first, then scroll.
@@ -206,7 +239,7 @@ export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudyS
   }, []);
 
   // Any navigation on the study site also exits the messaging layer, so the
-  // user can leave Chatistry by simply clicking Home, Topics, or any other link.
+  // user can leave Chatistry by simply clicking any menu item or link.
   const exitThen = (fn?: () => void) => () => { onExitChat(); fn?.(); };
 
   return (
@@ -217,8 +250,8 @@ export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudyS
           <a href="#home" className="study-brand" onClick={exitThen()}>
             <span className="study-brand-mark"><Leaf className="w-4 h-4" /></span>
             <span className="study-brand-text">
-              <strong>BioNotes</strong>
-              <small>Pearson IAL Biology</small>
+              <strong>SciNotes</strong>
+              <small>Pearson IAL Sciences</small>
             </span>
           </a>
 
@@ -254,44 +287,53 @@ export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudyS
         </main>
       )}
 
-      {/* ── Study content ──────────────────────────────────────── */}
-      {!note && (
+      {/* ── A subject page ─────────────────────────────────────── */}
+      {!note && subject && (
+        <main className="study-main">
+          <SubjectView subject={subject} />
+        </main>
+      )}
+
+      {/* ── Home ───────────────────────────────────────────────── */}
+      {!note && !subject && (
         <main className="study-main">
           {/* Hero */}
           <section id="home" className="study-hero">
             <div className="study-hero-copy">
               <span className="study-badge"><Sparkles className="w-3.5 h-3.5" /> Pearson Edexcel International AS &amp; A Level</span>
               <h1 className="study-h1">
-                Biology notes &amp; revision,<br />
-                <span className="study-accent-text">organised for the exam.</span>
+                Biology, Chemistry &amp; Physics<br />
+                <span className="study-accent-text">revision, organised for the exam.</span>
               </h1>
               <p className="study-lede">
-                Clear, syllabus-aligned notes for every unit of Pearson IAL Biology — with revision
-                topics, required practicals and exam practice, all in one place.
+                Clear, syllabus-aligned notes for every unit of Pearson IAL Biology, Chemistry and
+                Physics — with revision topics, required practicals and exam practice, all in one place.
               </p>
               <div className="study-hero-actions">
-                <a href="#topics" className="study-btn study-btn-primary study-btn-lg" onClick={exitThen()}>
-                  Browse the units <ArrowRight className="w-4 h-4" />
+                <a href="#subjects" className="study-btn study-btn-primary study-btn-lg" onClick={exitThen()}>
+                  Browse the subjects <ArrowRight className="w-4 h-4" />
                 </a>
                 <a href="#revision" className="study-btn study-btn-ghost study-btn-lg" onClick={exitThen()}>Start revising</a>
               </div>
               <div className="study-hero-stats">
-                <span><strong>6</strong> units covered</span>
-                <span><strong>40+</strong> revision topics</span>
-                <span><strong>100%</strong> spec-aligned</span>
+                <span><strong>3</strong> subjects</span>
+                <span><strong>18</strong> units covered</span>
+                <span><strong>65</strong> revision topics</span>
               </div>
             </div>
 
             <div className="study-hero-card">
               <div className="study-hero-card-head">
                 <span className="study-hero-card-dot" />
-                <span>Today’s revision · Unit 3</span>
+                <span>Today’s revision · mixed set</span>
               </div>
               <ul className="study-checklist">
-                <li><CheckCircle2 className="w-4 h-4" /><a href="#/notes/homeostasis-and-excretion" onClick={exitThen()}>Homeostasis &amp; negative feedback</a></li>
-                <li><CheckCircle2 className="w-4 h-4" /><a href="#/notes/neuronal-coordination" onClick={exitThen()}>Action potentials &amp; synapses</a></li>
-                <li><CheckCircle2 className="w-4 h-4" /><a href="#/notes/muscles-and-movement" onClick={exitThen()}>Muscle contraction sliding filament</a></li>
-                <li><CheckCircle2 className="w-4 h-4" /><a href="#/notes/respiration" onClick={exitThen()}>Respiration: glycolysis → Krebs → ETC</a></li>
+                {TODAY_REVISION.map(item => (
+                  <li key={item.slug}>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <a href={`#/notes/${item.slug}`} onClick={exitThen()}>{item.label}</a>
+                  </li>
+                ))}
               </ul>
               <div className="study-hero-card-foot">
                 <span><Clock className="w-3.5 h-3.5" /> ~45 min session</span>
@@ -300,31 +342,34 @@ export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudyS
             </div>
           </section>
 
-          {/* Topics */}
-          <section id="topics" className="study-section">
+          {/* Subjects */}
+          <section id="subjects" className="study-section">
             <div className="study-section-head">
-              <p className="study-eyebrow">Topics by unit</p>
-              <h2 className="study-h2">Everything on the specification, nothing off it.</h2>
-              <p className="study-sub">Each unit breaks down into focused revision topics with notes, diagrams and questions.</p>
+              <p className="study-eyebrow">Subjects</p>
+              <h2 className="study-h2">Three subjects, every unit, nothing off the spec.</h2>
+              <p className="study-sub">Each subject breaks down into units and focused revision topics with notes, diagrams and exam tips.</p>
             </div>
             <div className="study-grid study-grid-3">
-              {UNITS.map(({ code, icon: Icon, title, copy, topics }) => (
-                <article key={code} className="study-card">
-                  <div className="study-card-top">
-                    <span className="study-icon"><Icon className="w-4.5 h-4.5" /></span>
-                    <span className="study-code">{code}</span>
-                  </div>
-                  <h3 className="study-card-title">
-                    <a href={`#/notes/${topics[0].slug}`} onClick={exitThen()}>{title}</a>
-                  </h3>
-                  <p className="study-card-copy">{copy}</p>
-                  <div className="study-chips">
-                    {topics.map(t => (
-                      <a key={t.slug} href={`#/notes/${t.slug}`} className="study-chip" onClick={exitThen()}>{t.label}</a>
-                    ))}
-                  </div>
-                </article>
-              ))}
+              {SUBJECTS.map(s => {
+                const Icon = SUBJECT_ICONS[s.slug] ?? ClipboardList;
+                return (
+                  <a key={s.slug} href={`#/subject/${s.slug}`} className="study-card study-card-link" onClick={exitThen()}>
+                    <div className="study-card-top">
+                      <span className="study-icon"><Icon className="w-4.5 h-4.5" /></span>
+                      <span className="study-code">{s.units.length} units · {topicCount(s)} topics</span>
+                    </div>
+                    <h3 className="study-card-title">{s.name} notes &amp; revision</h3>
+                    <p className="study-card-copy">{s.blurb}</p>
+                    <div className="study-chips">
+                      {s.units.slice(0, 3).map(u => (
+                        <span key={u.code} className="study-chip">{u.code.split(' · ')[0]}</span>
+                      ))}
+                      <span className="study-chip">+{s.units.length - 3} more</span>
+                    </div>
+                    <span className="study-card-more">Browse {s.name.toLowerCase()} topics <ArrowRight className="w-3.5 h-3.5" /></span>
+                  </a>
+                );
+              })}
             </div>
           </section>
 
@@ -361,20 +406,7 @@ export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudyS
               <h2 className="study-h2">Past papers &amp; mark schemes</h2>
               <p className="study-sub">Practise under timed conditions, then mark yourself honestly against the scheme.</p>
             </div>
-            <div className="study-table-wrap">
-              <table className="study-table">
-                <thead>
-                  <tr><th>Unit</th><th>Paper</th><th>Duration</th><th>Marks</th></tr>
-                </thead>
-                <tbody>
-                  {EXAM_ROWS.map(row => (
-                    <tr key={row.paper}>
-                      <td>{row.unit}</td><td>{row.paper}</td><td>{row.time}</td><td>{row.marks}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PapersTable />
             <p className="study-note">Paper formats can change — always confirm against the latest Pearson specification.</p>
           </section>
 
@@ -408,8 +440,9 @@ export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudyS
               <p className="study-eyebrow">About</p>
               <h2 className="study-h2">Made by students, for students.</h2>
               <p className="study-sub">
-                BioNotes collects the notes, diagrams and practice material we wish we’d had — kept
-                up to date with the Pearson IAL Biology specification and free to use while revising.
+                SciNotes collects the notes, diagrams and practice material we wish we’d had — kept
+                up to date with the Pearson IAL Biology, Chemistry and Physics specifications and
+                free to use while revising.
               </p>
             </div>
           </section>
@@ -419,14 +452,14 @@ export function StudySite({ chatOpen, onOpenChat, onExitChat, children }: StudyS
       <footer className="study-footer">
         <div className="study-footer-inner">
           <a href="#home" className="study-brand" onClick={exitThen()}>
-            <span className="study-brand-mark"><Leaf className="w-4 h-4" /></span> BioNotes
+            <span className="study-brand-mark"><Leaf className="w-4 h-4" /></span> SciNotes
           </a>
           <nav className="study-footer-links" aria-label="Footer">
             {NAV_LINKS.map(link => (
               <a key={link.href} href={link.href} className="study-link" onClick={exitThen()}>{link.label}</a>
             ))}
           </nav>
-          <span className="study-footer-note">Study notes for revision purposes · Pearson IAL Biology</span>
+          <span className="study-footer-note">Study notes for revision purposes · Pearson IAL Sciences</span>
         </div>
       </footer>
     </div>

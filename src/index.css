@@ -282,3 +282,22 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   .study-note-nav { flex-direction: column; align-items: stretch; }
   .study-note-nav .study-btn { max-width: none; justify-content: center; }
 }
+
+/* ── Subject pages & multi-subject menus ─────────────────────────────────── */
+.study-subject-wrap { max-width: 72rem; margin: 0 auto; padding: 3.25rem 1.25rem 4.5rem; }
+.study-subject-head { max-width: 46rem; margin-bottom: 2.75rem; }
+.study-h1-sm { margin-top: 1.15rem; font-size: clamp(2.1rem, 4.4vw, 3.15rem); }
+.study-subject-papers { margin-top: 4.5rem; }
+.study-subject-papers .study-section-head { margin-bottom: 2rem; }
+.study-card-top .study-code { text-align: right; }
+
+/* The navbar now carries subject menus — tighten it so everything fits. */
+.study-link { padding: .45rem .62rem; font-size: .84rem; }
+.study-nav-links { gap: .1rem; }
+
+@media (max-width: 1180px) {
+  .study-brand-text small { display: none; }
+}
+@media (max-width: 1060px) {
+  .study-nav-links { display: none; }
+}

@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Lightbulb, ListTree } from 'lucide-react';
 import type { Note } from '../data/notes';
 import { siblingsOf, neighboursOf } from '../data/notes';
+import { subjectOfTopic } from '../data/subjects';
 
 interface NotesPageProps {
   note: Note;
@@ -16,6 +17,7 @@ interface NotesPageProps {
 export function NotesPage({ note }: NotesPageProps) {
   const siblings = siblingsOf(note);
   const { prev, next } = neighboursOf(note);
+  const subject = subjectOfTopic(note.slug);
 
   return (
     <div className="study-note-wrap">
@@ -23,8 +25,17 @@ export function NotesPage({ note }: NotesPageProps) {
         <nav className="study-crumb" aria-label="Breadcrumb">
           <a href="#home" className="study-link">Home</a>
           <span>/</span>
-          <a href="#topics" className="study-link">Topics</a>
-          <span>/</span>
+          {subject ? (
+            <>
+              <a href={`#/subject/${subject.slug}`} className="study-link">{subject.name}</a>
+              <span>/</span>
+            </>
+          ) : (
+            <>
+              <a href="#resources" className="study-link">Resources</a>
+              <span>/</span>
+            </>
+          )}
           <span className="study-crumb-current">{note.title}</span>
         </nav>
 
@@ -99,7 +110,7 @@ export function NotesPage({ note }: NotesPageProps) {
               <ArrowLeft className="w-4 h-4" /> {prev.title}
             </a>
           ) : <span />}
-          <a href="#topics" className="study-btn study-btn-ghost"><ListTree className="w-4 h-4" /> All topics</a>
+          <a href={subject ? `#/subject/${subject.slug}` : '#subjects'} className="study-btn study-btn-ghost"><ListTree className="w-4 h-4" /> All {subject ? subject.name.toLowerCase() : ''} topics</a>
           {next ? (
             <a href={`#/notes/${next.slug}`} className="study-btn study-btn-ghost">
               {next.title} <ArrowRight className="w-4 h-4" />

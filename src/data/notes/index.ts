@@ -5,6 +5,10 @@ import { unit3Notes } from './unit3';
 import { unit4Notes } from './unit4';
 import { unit5Notes } from './unit5';
 import { unit6Notes } from './unit6';
+import { chemASNotes } from './chemAS';
+import { chemA2Notes } from './chemA2';
+import { physASNotes } from './physAS';
+import { physA2Notes } from './physA2';
 import { extrasNotes } from './extras';
 
 export * from './types';
@@ -17,6 +21,10 @@ export const NOTES: Note[] = [
   ...unit4Notes,
   ...unit5Notes,
   ...unit6Notes,
+  ...chemASNotes,
+  ...chemA2Notes,
+  ...physASNotes,
+  ...physA2Notes,
   ...extrasNotes,
 ];
 
